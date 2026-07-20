@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#9d2f22">
-  <meta name="description" content="《百题大过关·小升初语文 基础百题》离线互动练习册，原题扫描与参考答案按题号精确对应。">
+  <meta name="description" content="《百题大过关·小升初语文 基础百题》509 道互动文字题卡，原题扫描与参考答案按题号精确对应。">
   <meta property="og:type" content="website">
   <meta property="og:title" content="百题大过关·小升初语文｜互动练习">
-  <meta property="og:description" content="第一章 77 道文字题卡，原题扫描与参考答案按题号精确对应。">
+  <meta property="og:description" content="509 道小升初语文文字题卡，原题扫描与参考答案按题号精确对应。">
   <meta property="og:url" content="https://renrenlu.github.io/baiti2026/">
   <meta property="og:image" content="https://renrenlu.github.io/baiti2026/assets/og-preview.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <title>百题大过关·小升初语文｜互动练习</title>
-  <link rel="icon" href="assets/favicon.svg?v=20260720-3" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20260720-3">
+  <link rel="icon" href="assets/favicon.svg?v=20260720-4" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css?v=20260720-4">
 </head>
 <body>
   <div class="app-shell">
@@ -67,7 +67,7 @@
         </div>
         <div class="cover-wrap" aria-label="书籍封面">
           <div class="cover-shadow"></div>
-          <img src="assets/cover.jpg?v=20260720-3" alt="百题大过关小升初语文基础百题封面">
+          <img src="assets/cover.jpg?v=20260720-4" alt="百题大过关小升初语文基础百题封面">
           <span class="cover-note">原书扫描版</span>
         </div>
       </section>
@@ -96,16 +96,16 @@
         <div class="practice-mode-switch" id="practiceModeSwitch" hidden aria-label="练习呈现方式">
           <button id="cardModeButton" type="button" aria-pressed="true">文字题卡</button>
           <button id="scanModeButton" type="button" aria-pressed="false">原书扫描</button>
-          <span>第一章样板 · 77 题</span>
+          <span id="modeSummary">本章文字题卡</span>
         </div>
 
-        <section class="question-practice" id="questionPractice" hidden aria-label="第一章文字题卡练习">
+        <section class="question-practice" id="questionPractice" hidden aria-label="文字题卡练习">
           <div class="question-card-shell">
             <header class="question-card-toolbar">
               <div>
-                <span class="question-count" id="questionCount">第 001 题 · 共 77 题</span>
+                <span class="question-count" id="questionCount">第 001 题 · 本章 77 题</span>
                 <label class="question-jump">跳到
-                  <select id="questionSelect" aria-label="选择第一章题号"></select>
+                  <select id="questionSelect" aria-label="选择题号"></select>
                 </label>
               </div>
               <span class="question-progress-label" id="questionProgressLabel">已核对 0 / 77</span>
@@ -134,6 +134,7 @@
                 <p>参考答案</p>
                 <strong id="cardAnswerText"></strong>
                 <div class="answer-detail" id="cardAnswerDetail" hidden></div>
+                <button class="answer-source-button" id="openCardAnswerSource" type="button">查看原书答案页</button>
                 <div class="card-feedback" id="cardFeedback"></div>
                 <div class="card-self-check" id="cardSelfCheck">
                   <span>这题掌握了吗？</span>
@@ -265,7 +266,8 @@
     </form>
   </dialog>
 
-  <script src="chapter1-data.js?v=20260720-3"></script>
-  <script src="app.js?v=20260720-3"></script>
+  <script src="chapter1-data.js?v=20260720-4"></script>
+  <script src="questions-data.js?v=20260720-4"></script>
+  <script src="app.js?v=20260720-4"></script>
 </body>
 </html>

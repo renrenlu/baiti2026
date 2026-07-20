@@ -1,8 +1,11 @@
 (() => {
   "use strict";
 
-  const assetVersion = "20260720-3";
+  const assetVersion = "20260720-4";
   const chapterOneQuestions = Array.isArray(window.chapterOneQuestions) ? window.chapterOneQuestions : [];
+  const additionalQuestions = Array.isArray(window.additionalQuestions) ? window.additionalQuestions : [];
+  const workbookQuestions = [...chapterOneQuestions, ...additionalQuestions].sort((a, b) => a.id - b.id);
+  const questionById = new Map(workbookQuestions.map((question) => [question.id, question]));
 
   const chapters = [
     { id: "chapter-1", index: "第一章", title: "识字写字", mark: "字", start: 1, end: 14, qStart: 1, qEnd: 77 },
@@ -48,7 +51,7 @@
   };
   let state = loadState();
   let currentPage = clamp(Number(state.currentPage) || 1, 1, 154);
-  let currentQuestion = clamp(Number(state.currentQuestion) || 1, 1, Math.max(1, chapterOneQuestions.length));
+  let currentQuestion = clamp(Number(state.currentQuestion) || 1, 1, Math.max(1, workbookQuestions.length));
   let workspaceMode = state.workspaceMode === "scan" ? "scan" : "cards";
   let answerVisible = false;
   let cardAnswerVisible = false;
@@ -59,14 +62,14 @@
     sidebar: $("sidebar"), scrim: $("scrim"), menuButton: $("menuButton"), closeMenuButton: $("closeMenuButton"),
     chapterNav: $("chapterNav"), chapterGrid: $("chapterGrid"), homeView: $("homeView"), overviewSection: $("overviewSection"),
     workspaceView: $("workspaceView"), workspaceKicker: $("workspaceKicker"), workspaceTitle: $("workspaceTitle"),
-    practiceModeSwitch: $("practiceModeSwitch"), cardModeButton: $("cardModeButton"), scanModeButton: $("scanModeButton"),
+    practiceModeSwitch: $("practiceModeSwitch"), cardModeButton: $("cardModeButton"), scanModeButton: $("scanModeButton"), modeSummary: $("modeSummary"),
     questionPractice: $("questionPractice"), scanWorkspaceGrid: $("scanWorkspaceGrid"), questionCount: $("questionCount"),
     questionSelect: $("questionSelect"), questionProgressLabel: $("questionProgressLabel"), questionProgressBar: $("questionProgressBar"),
     questionType: $("questionType"), questionSource: $("questionSource"), questionPrompt: $("questionPrompt"),
     questionOptions: $("questionOptions"), shortAnswerWrap: $("shortAnswerWrap"), questionDraft: $("questionDraft"),
     questionDraftStatus: $("questionDraftStatus"), revealCardAnswer: $("revealCardAnswer"),
     cardAnswer: $("cardAnswer"), cardAnswerText: $("cardAnswerText"),
-    cardAnswerDetail: $("cardAnswerDetail"), cardFeedback: $("cardFeedback"), cardSelfCheck: $("cardSelfCheck"),
+    cardAnswerDetail: $("cardAnswerDetail"), openCardAnswerSource: $("openCardAnswerSource"), cardFeedback: $("cardFeedback"), cardSelfCheck: $("cardSelfCheck"),
     pageSelect: $("pageSelect"), questionImage: $("questionImage"), paperStage: $("paperStage"), pageLocation: $("pageLocation"),
     questionImageState: $("questionImageState"), questionImageStateTitle: $("questionImageStateTitle"),
     questionImageStateCopy: $("questionImageStateCopy"), retryQuestionImage: $("retryQuestionImage"),
@@ -112,6 +115,10 @@
   function sourceForAnswer(answerPage) { return `assets/answers/answer-${pad3(answerPage + 159)}.jpg?v=${assetVersion}`; }
   function chapterForPage(page) { return chapters.find((chapter) => page >= chapter.start && page <= chapter.end); }
   function chapterForQuestion(number) { return chapters.find((chapter) => !chapter.challenge && number >= chapter.qStart && number <= chapter.qEnd); }
+  function questionsForChapter(chapter) {
+    if (!chapter || chapter.challenge) return [];
+    return workbookQuestions.filter((question) => question.id >= chapter.qStart && question.id <= chapter.qEnd);
+  }
   function answerPageForQuestion(number) {
     const index = answerRanges.findIndex(([start, end]) => number >= start && number <= end);
     return index < 0 ? null : index + 1;
@@ -162,8 +169,11 @@
   function openChapter(id) {
     const chapter = chapters.find((item) => item.id === id);
     if (!chapter) return;
-    if (chapter.id === "chapter-1" && chapterOneQuestions.length) workspaceMode = "cards";
-    else workspaceMode = "scan";
+    const chapterQuestions = questionsForChapter(chapter);
+    workspaceMode = chapterQuestions.length ? "cards" : "scan";
+    if (chapterQuestions.length && !chapterQuestions.some((question) => question.id === currentQuestion)) {
+      currentQuestion = chapterQuestions[0].id;
+    }
     const remembered = workspaceMode === "cards"
       ? activeQuestion().page
       : (currentPage >= chapter.start && currentPage <= chapter.end ? currentPage : chapter.start);
@@ -227,7 +237,8 @@
   }
 
   function renderWorkspaceMode(chapter = chapterForPage(currentPage)) {
-    const hasCards = chapter.id === "chapter-1" && chapterOneQuestions.length > 0;
+    const chapterQuestions = questionsForChapter(chapter);
+    const hasCards = chapterQuestions.length > 0;
     if (!hasCards) workspaceMode = "scan";
     const cards = hasCards && workspaceMode === "cards";
     els.practiceModeSwitch.hidden = !hasCards;
@@ -236,6 +247,7 @@
     els.workspaceView.classList.toggle("card-mode", cards);
     els.cardModeButton.setAttribute("aria-pressed", String(cards));
     els.scanModeButton.setAttribute("aria-pressed", String(!cards));
+    els.modeSummary.textContent = hasCards ? `${chapter.index} · ${chapterQuestions.length} 题` : "本章仅提供原书扫描";
     if (cards) renderQuestionCard();
     saveState();
   }
@@ -271,25 +283,27 @@
   }
 
   function activeQuestion() {
-    return chapterOneQuestions[currentQuestion - 1] || chapterOneQuestions[0];
+    return questionById.get(currentQuestion) || workbookQuestions[0];
   }
 
   function renderQuestionCard() {
     const question = activeQuestion();
     if (!question) return;
+    const chapter = chapterForQuestion(question.id);
+    const chapterQuestions = questionsForChapter(chapter);
     const checked = new Set(Array.isArray(state.questionChecked) ? state.questionChecked : []);
-    const checkedCount = chapterOneQuestions.filter((item) => checked.has(item.id)).length;
+    const checkedCount = chapterQuestions.filter((item) => checked.has(item.id)).length;
     const result = state.results[`q-${question.id}`];
     const draft = state.questionDrafts?.[question.id] || "";
 
-    els.questionCount.textContent = `第 ${pad3(question.id)} 题 · 共 ${chapterOneQuestions.length} 题`;
-    els.questionProgressLabel.textContent = `已核对 ${checkedCount} / ${chapterOneQuestions.length}`;
-    els.questionProgressBar.style.width = `${Math.round((checkedCount / chapterOneQuestions.length) * 100)}%`;
+    els.questionCount.textContent = `第 ${pad3(question.id)} 题 · 本章 ${chapterQuestions.length} 题`;
+    els.questionProgressLabel.textContent = `已核对 ${checkedCount} / ${chapterQuestions.length}`;
+    els.questionProgressBar.style.width = `${Math.round((checkedCount / chapterQuestions.length) * 100)}%`;
     els.questionType.textContent = question.type === "choice" ? "选择题" : "书写题";
     els.questionSource.textContent = `原书第 ${question.page} 页`;
     els.questionPrompt.textContent = question.prompt;
 
-    els.questionSelect.innerHTML = chapterOneQuestions.map((item) =>
+    els.questionSelect.innerHTML = chapterQuestions.map((item) =>
       `<option value="${item.id}" ${item.id === question.id ? "selected" : ""}>第 ${pad3(item.id)} 题${checked.has(item.id) ? " ✓" : ""}</option>`
     ).join("");
 
@@ -300,7 +314,7 @@
       els.questionOptions.innerHTML = question.options.map((option, index) => {
         const value = option.slice(0, 1);
         return `<label class="question-option ${draft === value ? "selected" : ""}">
-          <input type="radio" name="chapter-one-answer" value="${value}" ${draft === value ? "checked" : ""}>
+          <input type="radio" name="question-card-answer" value="${value}" ${draft === value ? "checked" : ""}>
           <span class="option-letter">${String.fromCharCode(65 + index)}</span><span>${option.replace(/^[A-Z]\.\s*/, "")}</span>
         </label>`;
       }).join("");
@@ -321,8 +335,8 @@
     document.querySelectorAll("[data-card-result]").forEach((button) => {
       button.classList.toggle("active", button.dataset.cardResult === result);
     });
-    $("prevQuestionButton").disabled = question.id === 1;
-    $("nextQuestionButton").disabled = question.id === chapterOneQuestions.length;
+    $("prevQuestionButton").disabled = question.id === chapter.qStart;
+    $("nextQuestionButton").disabled = question.id === chapter.qEnd;
   }
 
   function saveQuestionDraft(value) {
@@ -378,7 +392,9 @@
   }
 
   function goToQuestion(number, scroll = true) {
-    currentQuestion = clamp(Number(number), 1, chapterOneQuestions.length);
+    const target = questionById.get(clamp(Number(number), 1, workbookQuestions.length));
+    if (!target) return;
+    currentQuestion = target.id;
     const question = activeQuestion();
     currentPage = question.page;
     cardAnswerVisible = false;
@@ -390,6 +406,9 @@
   function setWorkspaceMode(mode) {
     if (mode === "cards") {
       workspaceMode = "cards";
+      const chapter = chapterForPage(currentPage);
+      const chapterQuestions = questionsForChapter(chapter);
+      if (!chapterQuestions.some((question) => question.id === currentQuestion)) currentQuestion = chapterQuestions[0]?.id || currentQuestion;
       currentPage = activeQuestion()?.page || 4;
     } else {
       workspaceMode = "scan";
@@ -574,7 +593,7 @@
     const chapter = chapterForQuestion(number);
     els.globalResult.textContent = `第 ${pad3(number)} 题属于${chapter.index}「${chapter.title}」，对应答案册第 ${answerPage} 页。`;
     currentPage = clamp(chapter.start, 1, 154);
-    if (number <= chapterOneQuestions.length) currentQuestion = number;
+    if (questionById.has(number)) currentQuestion = number;
     els.questionNumber.value = String(number);
     els.answerDialog.close();
     openPage(currentPage, { noScroll: true, mode: "scan" });
@@ -623,6 +642,11 @@
   $("prevQuestionButton").addEventListener("click", () => goToQuestion(currentQuestion - 1));
   $("nextQuestionButton").addEventListener("click", () => goToQuestion(currentQuestion + 1));
   $("openSourcePage").addEventListener("click", () => setWorkspaceMode("scan"));
+  els.openCardAnswerSource.addEventListener("click", () => {
+    const question = activeQuestion();
+    const answerPage = question.answerPage || answerPageForQuestion(question.id);
+    openImageDialog(sourceForAnswer(answerPage), `第 ${pad3(question.id)} 题 · 答案册第 ${answerPage} 页`);
+  });
   document.querySelectorAll("[data-card-result]").forEach((button) => button.addEventListener("click", () => setCardResult(button.dataset.cardResult)));
   $("closeDialogButton").addEventListener("click", () => els.imageDialog.close());
   els.imageDialog.addEventListener("click", (event) => { if (event.target === els.imageDialog) els.imageDialog.close(); });

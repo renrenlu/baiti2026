@@ -200,6 +200,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .card-answer > p { margin: 0 0 9px; color: var(--red); font: 800 11px system-ui, sans-serif; letter-spacing: .12em; }
 .card-answer > strong { display: block; white-space: pre-line; font-size: 18px; line-height: 1.8; }
 .answer-detail { margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddceb7; color: var(--muted); font-size: 14px; line-height: 1.75; }
+.answer-source-button { margin-top: 14px; border: 1px solid #c9baa8; border-radius: 8px; padding: 9px 12px; color: var(--red-dark); background: rgba(255,255,255,.55); font: 700 12px system-ui, sans-serif; cursor: pointer; }
 .card-feedback { margin-top: 14px; border-radius: 8px; padding: 10px 12px; font: 12px/1.6 system-ui, sans-serif; }
 .card-feedback.correct { color: #315d45; background: #deeee3; }
 .card-feedback.wrong { color: var(--red-dark); background: #f4ddd7; }
