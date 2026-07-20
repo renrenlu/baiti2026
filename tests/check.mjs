@@ -43,6 +43,7 @@ assert.ok(html.indexOf("chapter1-data.js") < html.indexOf("app.js"), "chapter da
 assert.match(source, /answers\/answer-/);
 assert.match(source, /localStorage/);
 assert.match(source, /retryQuestionImage/);
+assert.match(source, /revealCardAnswer: \$\("revealCardAnswer"\)/, "answer toggle must be present in the element map");
 assert.match(css, /@media \(max-width: 760px\)/);
 assert.match(css, /\.chapter-grid \{ grid-template-columns: 1fr;/);
 
