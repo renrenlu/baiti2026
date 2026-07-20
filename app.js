@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const assetVersion = "20260720-2";
+  const assetVersion = "20260720-3";
   const chapterOneQuestions = Array.isArray(window.chapterOneQuestions) ? window.chapterOneQuestions : [];
 
   const chapters = [
