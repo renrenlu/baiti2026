@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#9d2f22">
+  <meta name="description" content="《百题大过关·小升初语文 基础百题》离线互动练习册，原题扫描与参考答案按题号精确对应。">
+  <title>百题大过关·小升初语文｜互动练习</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="icon-button menu-button" id="menuButton" type="button" aria-label="打开目录" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <a class="brand" href="#home" aria-label="返回首页">
+        <span class="brand-mark">百</span>
+        <span><strong>基础百题</strong><small>小升初语文 · 互动练习</small></span>
+      </a>
+      <div class="top-progress" aria-label="学习进度">
+        <span id="progressLabel">已完成 0 / 154 页</span>
+        <span class="progress-track"><i id="progressBar"></i></span>
+      </div>
+      <button class="top-answer-button" id="topAnswerButton" type="button">题号查答案</button>
+    </header>
+
+    <aside class="sidebar" id="sidebar" aria-label="练习目录">
+      <div class="sidebar-head">
+        <p>学习目录</p>
+        <button class="icon-button close-button" id="closeMenuButton" type="button" aria-label="关闭目录">×</button>
+      </div>
+      <nav id="chapterNav"></nav>
+      <div class="sidebar-card">
+        <span>本地学习记录</span>
+        <strong id="sidebarProgress">0%</strong>
+        <button id="resetButton" type="button">清空全部记录</button>
+      </div>
+    </aside>
+    <button class="scrim" id="scrim" type="button" aria-label="关闭目录"></button>
+
+    <main class="main" id="main">
+      <section class="hero" id="homeView">
+        <div class="hero-copy">
+          <p class="eyebrow">2026 修订版 · 2 合 1</p>
+          <h1>把整本练习册<br><em>装进浏览器</em></h1>
+          <p class="hero-description">154 页原题完整保留，509 个连续题号精准定位答案，另含 10 套基础冲关。无需联网，作答与进度自动保存在本机。</p>
+          <div class="hero-actions">
+            <button class="primary-button" id="startButton" type="button">从第一章开始</button>
+            <button class="secondary-button" id="continueButton" type="button">继续上次学习</button>
+          </div>
+          <div class="hero-stats">
+            <span><strong>154</strong>练习页</span>
+            <span><strong>509</strong>连续题号</span>
+            <span><strong>30</strong>答案页</span>
+            <span><strong>10</strong>冲关套题</span>
+          </div>
+        </div>
+        <div class="cover-wrap" aria-label="书籍封面">
+          <div class="cover-shadow"></div>
+          <img src="assets/cover.jpg" alt="百题大过关小升初语文基础百题封面">
+          <span class="cover-note">原书扫描版</span>
+        </div>
+      </section>
+
+      <section class="overview" id="overviewSection">
+        <div class="section-title">
+          <div><p class="eyebrow">章节导航</p><h2>按知识板块推进</h2></div>
+          <p>每页完成后打卡，也可以随时输入原书题号查看对应答案。</p>
+        </div>
+        <div class="chapter-grid" id="chapterGrid"></div>
+      </section>
+
+      <section class="workspace" id="workspaceView" hidden>
+        <div class="workspace-bar">
+          <div>
+            <button class="back-home" id="backHomeButton" type="button">← 返回总览</button>
+            <p class="workspace-kicker" id="workspaceKicker">第一章</p>
+            <h1 id="workspaceTitle">识字写字</h1>
+          </div>
+          <div class="workspace-actions">
+            <button class="tool-button" id="favoriteButton" type="button" aria-pressed="false">☆ 收藏本页</button>
+            <button class="tool-button done-button" id="doneButton" type="button" aria-pressed="false">✓ 标记完成</button>
+          </div>
+        </div>
+
+        <div class="workspace-grid">
+          <section class="paper-panel" aria-label="原题练习页">
+            <div class="paper-toolbar">
+              <div class="page-stepper">
+                <button id="prevPageButton" type="button" aria-label="上一页">←</button>
+                <label>书页 <select id="pageSelect" aria-label="选择书页"></select></label>
+                <button id="nextPageButton" type="button" aria-label="下一页">→</button>
+              </div>
+              <label class="zoom-control">缩放
+                <input id="zoomRange" type="range" min="70" max="150" step="10" value="100">
+                <output id="zoomOutput">100%</output>
+              </label>
+            </div>
+            <div class="paper-stage" id="paperStage">
+              <img id="questionImage" alt="原书练习页">
+            </div>
+            <div class="page-footer">
+              <span id="pageLocation">书本第 1 页 · PDF 第 6 页</span>
+              <button id="openQuestionImageButton" type="button">放大查看原页</button>
+            </div>
+          </section>
+
+          <aside class="study-panel" aria-label="作答与答案">
+            <div class="study-tabs" role="tablist" aria-label="学习工具">
+              <button id="answerTab" type="button" role="tab" aria-selected="true">对应答案</button>
+              <button id="notesTab" type="button" role="tab" aria-selected="false">我的作答</button>
+            </div>
+
+            <div class="tab-panel" id="answerPanel" role="tabpanel">
+              <div class="answer-locator" id="numberLocator">
+                <label for="questionNumber">输入本页题号</label>
+                <div class="number-input-row">
+                  <button id="decrementQuestion" type="button" aria-label="上一题">−</button>
+                  <input id="questionNumber" type="number" min="1" max="509" inputmode="numeric" placeholder="如 230">
+                  <button id="incrementQuestion" type="button" aria-label="下一题">＋</button>
+                </div>
+                <p id="locatorHint">题号印在原题左侧，输入后会直达唯一对应的答案页。</p>
+              </div>
+              <div class="challenge-locator" id="challengeLocator" hidden>
+                <span>当前套题</span>
+                <strong id="challengeName">基础冲关（一）</strong>
+                <p id="challengeHint">本套答案位于答案册第 24—25 页。</p>
+              </div>
+
+              <div class="answer-gate" id="answerGate">
+                <span class="seal">答</span>
+                <h3>先完成，再核对</h3>
+                <p id="answerGateCopy">输入题号后，点击下方按钮显示原书对应答案页。</p>
+                <button class="reveal-button" id="revealAnswerButton" type="button">显示对应答案</button>
+              </div>
+
+              <div class="answer-result" id="answerResult" hidden>
+                <div class="answer-result-head">
+                  <div><p id="answerMatchLabel">第 230 题</p><h3 id="answerPageLabel">答案册第 11 页</h3></div>
+                  <button id="hideAnswerButton" type="button">收起答案</button>
+                </div>
+                <div class="answer-images" id="answerImages"></div>
+                <div class="self-check" id="selfCheck">
+                  <p>核对结果</p>
+                  <div>
+                    <button class="check-correct" data-result="correct" type="button">✓ 答对了</button>
+                    <button class="check-wrong" data-result="wrong" type="button">× 需订正</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-panel notes-panel" id="notesPanel" role="tabpanel" hidden>
+              <label for="pageNotes">本页作答 / 草稿</label>
+              <textarea id="pageNotes" placeholder="在这里记录答案、易错字或订正内容……"></textarea>
+              <div class="notes-status"><span id="notesSaved">输入内容会自动保存在本机</span><button id="clearNotesButton" type="button">清空本页</button></div>
+              <div class="learning-tip">
+                <strong>建议学法</strong>
+                <ol>
+                  <li>先在题面上独立完成。</li>
+                  <li>按原书题号定位答案。</li>
+                  <li>错题在这里写下订正理由。</li>
+                  <li>完成整页后点击“标记完成”。</li>
+                </ol>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog class="image-dialog" id="imageDialog">
+    <div class="dialog-bar"><span id="dialogTitle">原题页</span><button id="closeDialogButton" type="button" aria-label="关闭">×</button></div>
+    <div class="dialog-stage"><img id="dialogImage" alt="放大的扫描页"></div>
+  </dialog>
+
+  <dialog class="answer-dialog" id="answerDialog">
+    <form method="dialog" class="answer-dialog-card">
+      <button class="dialog-close" value="cancel" aria-label="关闭">×</button>
+      <p class="eyebrow">题号精准定位</p>
+      <h2>查找对应答案</h2>
+      <p>适用于正文连续编号 001—509。答案保持原书扫描，不经过改写。</p>
+      <label for="globalQuestionNumber">原书题号</label>
+      <div class="global-search-row">
+        <input id="globalQuestionNumber" type="number" min="1" max="509" inputmode="numeric" placeholder="输入 1—509">
+        <button id="globalSearchButton" type="button">定位</button>
+      </div>
+      <p class="global-result" id="globalResult">输入题号后，将打开该题唯一对应的答案页。</p>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

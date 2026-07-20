@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="15" fill="#a63a2b"/>
+  <path d="M13 16h38v4H13zm4 10h30v4H17zm-1 10h32v4H16z" fill="#f9f2e7" opacity=".34"/>
+  <text x="32" y="45" text-anchor="middle" font-family="serif" font-size="34" font-weight="700" fill="#fff">百</text>
+</svg>
