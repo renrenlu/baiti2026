@@ -1,6 +1,9 @@
 (() => {
   "use strict";
 
+  const assetVersion = "20260720-2";
+  const chapterOneQuestions = Array.isArray(window.chapterOneQuestions) ? window.chapterOneQuestions : [];
+
   const chapters = [
     { id: "chapter-1", index: "第一章", title: "识字写字", mark: "字", start: 1, end: 14, qStart: 1, qEnd: 77 },
     { id: "chapter-2", index: "第二章", title: "词语天地", mark: "词", start: 15, end: 34, qStart: 78, qEnd: 157 },
@@ -31,10 +34,24 @@
   ];
 
   const storageKey = "yuwen-basic-100-v1";
-  const defaultState = { currentPage: 1, completed: [], favorites: [], notes: {}, results: {}, zoom: 100 };
+  const defaultState = {
+    currentPage: 1,
+    currentQuestion: 1,
+    completed: [],
+    favorites: [],
+    notes: {},
+    results: {},
+    questionDrafts: {},
+    questionChecked: [],
+    workspaceMode: "cards",
+    zoom: 100
+  };
   let state = loadState();
   let currentPage = clamp(Number(state.currentPage) || 1, 1, 154);
+  let currentQuestion = clamp(Number(state.currentQuestion) || 1, 1, Math.max(1, chapterOneQuestions.length));
+  let workspaceMode = state.workspaceMode === "scan" ? "scan" : "cards";
   let answerVisible = false;
+  let cardAnswerVisible = false;
   let activeTab = "answer";
 
   const $ = (id) => document.getElementById(id);
@@ -42,7 +59,16 @@
     sidebar: $("sidebar"), scrim: $("scrim"), menuButton: $("menuButton"), closeMenuButton: $("closeMenuButton"),
     chapterNav: $("chapterNav"), chapterGrid: $("chapterGrid"), homeView: $("homeView"), overviewSection: $("overviewSection"),
     workspaceView: $("workspaceView"), workspaceKicker: $("workspaceKicker"), workspaceTitle: $("workspaceTitle"),
+    practiceModeSwitch: $("practiceModeSwitch"), cardModeButton: $("cardModeButton"), scanModeButton: $("scanModeButton"),
+    questionPractice: $("questionPractice"), scanWorkspaceGrid: $("scanWorkspaceGrid"), questionCount: $("questionCount"),
+    questionSelect: $("questionSelect"), questionProgressLabel: $("questionProgressLabel"), questionProgressBar: $("questionProgressBar"),
+    questionType: $("questionType"), questionSource: $("questionSource"), questionPrompt: $("questionPrompt"),
+    questionOptions: $("questionOptions"), shortAnswerWrap: $("shortAnswerWrap"), questionDraft: $("questionDraft"),
+    questionDraftStatus: $("questionDraftStatus"), cardAnswer: $("cardAnswer"), cardAnswerText: $("cardAnswerText"),
+    cardAnswerDetail: $("cardAnswerDetail"), cardFeedback: $("cardFeedback"), cardSelfCheck: $("cardSelfCheck"),
     pageSelect: $("pageSelect"), questionImage: $("questionImage"), paperStage: $("paperStage"), pageLocation: $("pageLocation"),
+    questionImageState: $("questionImageState"), questionImageStateTitle: $("questionImageStateTitle"),
+    questionImageStateCopy: $("questionImageStateCopy"), retryQuestionImage: $("retryQuestionImage"),
     favoriteButton: $("favoriteButton"), doneButton: $("doneButton"), questionNumber: $("questionNumber"),
     numberLocator: $("numberLocator"), challengeLocator: $("challengeLocator"), challengeName: $("challengeName"), challengeHint: $("challengeHint"),
     locatorHint: $("locatorHint"), answerGate: $("answerGate"), answerGateCopy: $("answerGateCopy"), answerResult: $("answerResult"),
@@ -56,7 +82,17 @@
 
   function loadState() {
     try {
-      return { ...defaultState, ...JSON.parse(localStorage.getItem(storageKey) || "{}") };
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      return {
+        ...defaultState,
+        ...saved,
+        completed: Array.isArray(saved.completed) ? saved.completed : [],
+        favorites: Array.isArray(saved.favorites) ? saved.favorites : [],
+        notes: saved.notes && typeof saved.notes === "object" ? saved.notes : {},
+        results: saved.results && typeof saved.results === "object" ? saved.results : {},
+        questionDrafts: saved.questionDrafts && typeof saved.questionDrafts === "object" ? saved.questionDrafts : {},
+        questionChecked: Array.isArray(saved.questionChecked) ? saved.questionChecked : []
+      };
     } catch {
       return { ...defaultState };
     }
@@ -64,13 +100,15 @@
 
   function saveState() {
     state.currentPage = currentPage;
+    state.currentQuestion = currentQuestion;
+    state.workspaceMode = workspaceMode;
     localStorage.setItem(storageKey, JSON.stringify(state));
   }
 
   function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
   function pad3(value) { return String(value).padStart(3, "0"); }
-  function sourceForPage(bookPage) { return `assets/pages/page-${pad3(bookPage + 5)}.jpg`; }
-  function sourceForAnswer(answerPage) { return `assets/answers/answer-${pad3(answerPage + 159)}.jpg`; }
+  function sourceForPage(bookPage) { return `assets/pages/page-${pad3(bookPage + 5)}.jpg?v=${assetVersion}`; }
+  function sourceForAnswer(answerPage) { return `assets/answers/answer-${pad3(answerPage + 159)}.jpg?v=${assetVersion}`; }
   function chapterForPage(page) { return chapters.find((chapter) => page >= chapter.start && page <= chapter.end); }
   function chapterForQuestion(number) { return chapters.find((chapter) => !chapter.challenge && number >= chapter.qStart && number <= chapter.qEnd); }
   function answerPageForQuestion(number) {
@@ -123,13 +161,18 @@
   function openChapter(id) {
     const chapter = chapters.find((item) => item.id === id);
     if (!chapter) return;
-    const remembered = currentPage >= chapter.start && currentPage <= chapter.end ? currentPage : chapter.start;
+    if (chapter.id === "chapter-1" && chapterOneQuestions.length) workspaceMode = "cards";
+    else workspaceMode = "scan";
+    const remembered = workspaceMode === "cards"
+      ? activeQuestion().page
+      : (currentPage >= chapter.start && currentPage <= chapter.end ? currentPage : chapter.start);
     openPage(remembered);
     closeMenu();
   }
 
   function openPage(page, options = {}) {
     currentPage = clamp(Number(page), 1, 154);
+    if (options.mode) workspaceMode = options.mode;
     state.currentPage = currentPage;
     saveState();
     els.homeView.hidden = true;
@@ -143,8 +186,8 @@
     const chapter = chapterForPage(currentPage);
     els.workspaceKicker.textContent = chapter.index;
     els.workspaceTitle.textContent = chapter.title;
-    els.questionImage.src = sourceForPage(currentPage);
     els.questionImage.alt = `《百题大过关·小升初语文》书本第 ${currentPage} 页原题`;
+    loadQuestionImage();
     els.pageLocation.textContent = `书本第 ${currentPage} 页 · PDF 第 ${currentPage + 5} 页`;
     els.pageSelect.innerHTML = Array.from({ length: chapter.end - chapter.start + 1 }, (_, index) => {
       const page = chapter.start + index;
@@ -177,8 +220,182 @@
       els.answerGateCopy.textContent = "输入本页题号后，点击下方按钮显示唯一对应的原书答案页。";
     }
     if (!keepAnswer) hideAnswer();
+    renderWorkspaceMode(chapter);
     renderProgress();
     renderResultSelection();
+  }
+
+  function renderWorkspaceMode(chapter = chapterForPage(currentPage)) {
+    const hasCards = chapter.id === "chapter-1" && chapterOneQuestions.length > 0;
+    if (!hasCards) workspaceMode = "scan";
+    const cards = hasCards && workspaceMode === "cards";
+    els.practiceModeSwitch.hidden = !hasCards;
+    els.questionPractice.hidden = !cards;
+    els.scanWorkspaceGrid.hidden = cards;
+    els.workspaceView.classList.toggle("card-mode", cards);
+    els.cardModeButton.setAttribute("aria-pressed", String(cards));
+    els.scanModeButton.setAttribute("aria-pressed", String(!cards));
+    if (cards) renderQuestionCard();
+    saveState();
+  }
+
+  function loadQuestionImage(retry = false) {
+    const base = sourceForPage(currentPage);
+    const src = retry ? `${base}&retry=${Date.now()}` : base;
+    els.paperStage.classList.remove("image-ready", "image-error");
+    els.paperStage.classList.add("image-loading");
+    els.questionImageState.hidden = false;
+    els.questionImageStateTitle.textContent = "正在加载原书页…";
+    els.questionImageStateCopy.textContent = "首次打开可能需要几秒";
+    els.retryQuestionImage.hidden = true;
+    els.questionImage.onload = () => {
+      els.paperStage.classList.remove("image-loading", "image-error");
+      els.paperStage.classList.add("image-ready");
+      els.questionImageState.hidden = true;
+    };
+    els.questionImage.onerror = () => {
+      els.paperStage.classList.remove("image-loading", "image-ready");
+      els.paperStage.classList.add("image-error");
+      els.questionImageState.hidden = false;
+      els.questionImageStateTitle.textContent = "原书页没有加载成功";
+      els.questionImageStateCopy.textContent = "可能是微信缓存或网络波动，请点下方重试。";
+      els.retryQuestionImage.hidden = false;
+    };
+    els.questionImage.src = src;
+    setTimeout(() => {
+      if (!els.questionImage.complete) return;
+      if (els.questionImage.naturalWidth > 0) els.questionImage.onload();
+      else els.questionImage.onerror();
+    }, 0);
+  }
+
+  function activeQuestion() {
+    return chapterOneQuestions[currentQuestion - 1] || chapterOneQuestions[0];
+  }
+
+  function renderQuestionCard() {
+    const question = activeQuestion();
+    if (!question) return;
+    const checked = new Set(Array.isArray(state.questionChecked) ? state.questionChecked : []);
+    const checkedCount = chapterOneQuestions.filter((item) => checked.has(item.id)).length;
+    const result = state.results[`q-${question.id}`];
+    const draft = state.questionDrafts?.[question.id] || "";
+
+    els.questionCount.textContent = `第 ${pad3(question.id)} 题 · 共 ${chapterOneQuestions.length} 题`;
+    els.questionProgressLabel.textContent = `已核对 ${checkedCount} / ${chapterOneQuestions.length}`;
+    els.questionProgressBar.style.width = `${Math.round((checkedCount / chapterOneQuestions.length) * 100)}%`;
+    els.questionType.textContent = question.type === "choice" ? "选择题" : "书写题";
+    els.questionSource.textContent = `原书第 ${question.page} 页`;
+    els.questionPrompt.textContent = question.prompt;
+
+    els.questionSelect.innerHTML = chapterOneQuestions.map((item) =>
+      `<option value="${item.id}" ${item.id === question.id ? "selected" : ""}>第 ${pad3(item.id)} 题${checked.has(item.id) ? " ✓" : ""}</option>`
+    ).join("");
+
+    const isChoice = question.type === "choice";
+    els.questionOptions.hidden = !isChoice;
+    els.shortAnswerWrap.hidden = isChoice;
+    if (isChoice) {
+      els.questionOptions.innerHTML = question.options.map((option, index) => {
+        const value = option.slice(0, 1);
+        return `<label class="question-option ${draft === value ? "selected" : ""}">
+          <input type="radio" name="chapter-one-answer" value="${value}" ${draft === value ? "checked" : ""}>
+          <span class="option-letter">${String.fromCharCode(65 + index)}</span><span>${option.replace(/^[A-Z]\.\s*/, "")}</span>
+        </label>`;
+      }).join("");
+      els.questionOptions.querySelectorAll("input").forEach((input) => input.addEventListener("change", () => {
+        saveQuestionDraft(input.value);
+        els.questionOptions.querySelectorAll(".question-option").forEach((label) => label.classList.toggle("selected", label.contains(input)));
+        if (cardAnswerVisible) renderCardAnswer(question);
+      }));
+    } else {
+      els.questionOptions.innerHTML = "";
+      els.questionDraft.value = draft;
+    }
+
+    els.questionDraftStatus.textContent = draft ? "作答已保存在本机" : "作答会自动保存在本机";
+    els.cardAnswer.hidden = !cardAnswerVisible;
+    els.revealCardAnswer.textContent = cardAnswerVisible ? "收起答案" : "核对答案";
+    if (cardAnswerVisible) renderCardAnswer(question);
+    document.querySelectorAll("[data-card-result]").forEach((button) => {
+      button.classList.toggle("active", button.dataset.cardResult === result);
+    });
+    $("prevQuestionButton").disabled = question.id === 1;
+    $("nextQuestionButton").disabled = question.id === chapterOneQuestions.length;
+  }
+
+  function saveQuestionDraft(value) {
+    const question = activeQuestion();
+    if (!question) return;
+    state.questionDrafts ||= {};
+    if (value) state.questionDrafts[question.id] = value;
+    else delete state.questionDrafts[question.id];
+    saveState();
+    els.questionDraftStatus.textContent = value ? "作答已保存" : "作答会自动保存在本机";
+  }
+
+  function renderCardAnswer(question = activeQuestion()) {
+    const draft = state.questionDrafts?.[question.id] || "";
+    els.cardAnswer.hidden = false;
+    els.cardAnswerText.textContent = question.answer;
+    els.cardAnswerDetail.hidden = !question.detail;
+    els.cardAnswerDetail.textContent = question.detail || "";
+    if (question.type === "choice") {
+      if (!draft) {
+        els.cardFeedback.className = "card-feedback neutral";
+        els.cardFeedback.textContent = "你还没有选择答案，可以先核对，再回到上方作答。";
+      } else if (draft === question.answer) {
+        els.cardFeedback.className = "card-feedback correct";
+        els.cardFeedback.textContent = `你的答案：${draft}　✓ 与参考答案一致`;
+      } else {
+        els.cardFeedback.className = "card-feedback wrong";
+        els.cardFeedback.textContent = `你的答案：${draft}　参考答案：${question.answer}`;
+      }
+    } else {
+      els.cardFeedback.className = "card-feedback neutral";
+      els.cardFeedback.textContent = draft ? "请逐项对照参考答案，并在下方完成自评。" : "可以先查看参考答案，再补写或订正自己的作答。";
+    }
+  }
+
+  function toggleCardAnswer() {
+    cardAnswerVisible = !cardAnswerVisible;
+    if (cardAnswerVisible) {
+      const checked = new Set(Array.isArray(state.questionChecked) ? state.questionChecked : []);
+      checked.add(activeQuestion().id);
+      state.questionChecked = [...checked].sort((a, b) => a - b);
+      saveState();
+    }
+    renderQuestionCard();
+  }
+
+  function setCardResult(result) {
+    const question = activeQuestion();
+    if (!question) return;
+    state.results[`q-${question.id}`] = result;
+    saveState();
+    renderQuestionCard();
+  }
+
+  function goToQuestion(number, scroll = true) {
+    currentQuestion = clamp(Number(number), 1, chapterOneQuestions.length);
+    const question = activeQuestion();
+    currentPage = question.page;
+    cardAnswerVisible = false;
+    saveState();
+    renderQuestionCard();
+    if (scroll) window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function setWorkspaceMode(mode) {
+    if (mode === "cards") {
+      workspaceMode = "cards";
+      currentPage = activeQuestion()?.page || 4;
+    } else {
+      workspaceMode = "scan";
+    }
+    saveState();
+    renderWorkspace(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function renderProgress() {
@@ -224,12 +441,44 @@
     els.answerResult.hidden = false;
     els.answerMatchLabel.textContent = matchLabel;
     els.answerPageLabel.textContent = `答案册${rangeLabel(answerPages)}`;
-    els.answerImages.innerHTML = answerPages.map((answerPage) => `<div class="answer-image-wrap">
+    els.answerImages.innerHTML = answerPages.map((answerPage) => `<div class="answer-image-wrap is-loading">
       <span class="answer-page-chip">答案册第 ${answerPage} 页</span>
-      <img src="${sourceForAnswer(answerPage)}" alt="答案册第 ${answerPage} 页" data-answer-page="${answerPage}">
+      <img src="${sourceForAnswer(answerPage)}" alt="答案册第 ${answerPage} 页" data-answer-page="${answerPage}" decoding="async">
+      <div class="answer-image-status"><span class="loading-spinner"></span><strong>正在加载答案页…</strong><button type="button" hidden>重新加载</button></div>
     </div>`).join("");
     els.answerImages.scrollTop = 0;
-    els.answerImages.querySelectorAll("img").forEach((image) => image.addEventListener("click", () => openImageDialog(image.src, image.alt)));
+    els.answerImages.querySelectorAll(".answer-image-wrap").forEach((wrap) => {
+      const image = wrap.querySelector("img");
+      const status = wrap.querySelector(".answer-image-status");
+      const retry = status.querySelector("button");
+      image.addEventListener("load", () => { wrap.classList.remove("is-loading", "is-error"); status.hidden = true; });
+      image.addEventListener("error", () => {
+        wrap.classList.remove("is-loading");
+        wrap.classList.add("is-error");
+        status.hidden = false;
+        status.querySelector("strong").textContent = "答案页加载失败";
+        status.querySelector(".loading-spinner").hidden = true;
+        retry.hidden = false;
+      });
+      retry.addEventListener("click", () => {
+        wrap.classList.remove("is-error");
+        wrap.classList.add("is-loading");
+        status.hidden = false;
+        status.querySelector("strong").textContent = "正在重新加载…";
+        status.querySelector(".loading-spinner").hidden = false;
+        retry.hidden = true;
+        image.src = `${sourceForAnswer(Number(image.dataset.answerPage))}&retry=${Date.now()}`;
+      });
+      image.addEventListener("click", () => openImageDialog(image.src, image.alt));
+      if (image.complete) {
+        if (image.naturalWidth > 0) {
+          wrap.classList.remove("is-loading", "is-error");
+          status.hidden = true;
+        } else {
+          image.dispatchEvent(new Event("error"));
+        }
+      }
+    });
     renderResultSelection();
   }
 
@@ -324,14 +573,15 @@
     const chapter = chapterForQuestion(number);
     els.globalResult.textContent = `第 ${pad3(number)} 题属于${chapter.index}「${chapter.title}」，对应答案册第 ${answerPage} 页。`;
     currentPage = clamp(chapter.start, 1, 154);
+    if (number <= chapterOneQuestions.length) currentQuestion = number;
     els.questionNumber.value = String(number);
     els.answerDialog.close();
-    openPage(currentPage, { noScroll: true });
+    openPage(currentPage, { noScroll: true, mode: "scan" });
     els.questionNumber.value = String(number);
     revealAnswer();
   }
 
-  $("startButton").addEventListener("click", () => openPage(1));
+  $("startButton").addEventListener("click", () => openChapter("chapter-1"));
   $("continueButton").addEventListener("click", () => openPage(currentPage));
   $("backHomeButton").addEventListener("click", showHome);
   $("prevPageButton").addEventListener("click", () => openPage(currentPage - 1));
@@ -359,7 +609,20 @@
   els.pageNotes.addEventListener("input", saveNotes);
   $("clearNotesButton").addEventListener("click", () => { els.pageNotes.value = ""; saveNotes(); });
   els.zoomRange.addEventListener("input", updateZoom);
+  els.retryQuestionImage.addEventListener("click", () => loadQuestionImage(true));
   $("openQuestionImageButton").addEventListener("click", () => openImageDialog(els.questionImage.src, els.questionImage.alt));
+  els.cardModeButton.addEventListener("click", () => setWorkspaceMode("cards"));
+  els.scanModeButton.addEventListener("click", () => setWorkspaceMode("scan"));
+  els.questionSelect.addEventListener("change", () => goToQuestion(Number(els.questionSelect.value)));
+  els.questionDraft.addEventListener("input", () => {
+    saveQuestionDraft(els.questionDraft.value);
+    if (cardAnswerVisible) renderCardAnswer();
+  });
+  $("revealCardAnswer").addEventListener("click", toggleCardAnswer);
+  $("prevQuestionButton").addEventListener("click", () => goToQuestion(currentQuestion - 1));
+  $("nextQuestionButton").addEventListener("click", () => goToQuestion(currentQuestion + 1));
+  $("openSourcePage").addEventListener("click", () => setWorkspaceMode("scan"));
+  document.querySelectorAll("[data-card-result]").forEach((button) => button.addEventListener("click", () => setCardResult(button.dataset.cardResult)));
   $("closeDialogButton").addEventListener("click", () => els.imageDialog.close());
   els.imageDialog.addEventListener("click", (event) => { if (event.target === els.imageDialog) els.imageDialog.close(); });
   els.menuButton.addEventListener("click", openMenu);
@@ -370,8 +633,10 @@
   els.globalQuestionNumber.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); runGlobalSearch(); } });
   $("resetButton").addEventListener("click", () => {
     if (!confirm("确定清空所有完成记录、收藏、作答笔记和自评结果吗？此操作无法撤销。")) return;
-    state = { ...defaultState, completed: [], favorites: [], notes: {}, results: {} };
+    state = { ...defaultState, completed: [], favorites: [], notes: {}, results: {}, questionDrafts: {}, questionChecked: [] };
     currentPage = 1;
+    currentQuestion = 1;
+    workspaceMode = "cards";
     saveState();
     renderProgress();
     showHome();
@@ -379,10 +644,16 @@
 
   document.addEventListener("keydown", (event) => {
     if (els.workspaceView.hidden || ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
-    if (event.key === "ArrowLeft") openPage(currentPage - 1);
-    if (event.key === "ArrowRight") openPage(currentPage + 1);
-    if (event.key.toLowerCase() === "a") revealAnswer();
-    if (event.key.toLowerCase() === "d") toggleListValue("completed", currentPage);
+    if (workspaceMode === "cards" && !els.questionPractice.hidden) {
+      if (event.key === "ArrowLeft") goToQuestion(currentQuestion - 1);
+      if (event.key === "ArrowRight") goToQuestion(currentQuestion + 1);
+      if (event.key.toLowerCase() === "a") toggleCardAnswer();
+    } else {
+      if (event.key === "ArrowLeft") openPage(currentPage - 1);
+      if (event.key === "ArrowRight") openPage(currentPage + 1);
+      if (event.key.toLowerCase() === "a") revealAnswer();
+      if (event.key.toLowerCase() === "d") toggleListValue("completed", currentPage);
+    }
   });
 
   renderProgress();

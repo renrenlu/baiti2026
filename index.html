@@ -5,9 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#9d2f22">
   <meta name="description" content="《百题大过关·小升初语文 基础百题》离线互动练习册，原题扫描与参考答案按题号精确对应。">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="百题大过关·小升初语文｜互动练习">
+  <meta property="og:description" content="第一章 77 道文字题卡，原题扫描与参考答案按题号精确对应。">
+  <meta property="og:url" content="https://renrenlu.github.io/baiti2026/">
+  <meta property="og:image" content="https://renrenlu.github.io/baiti2026/assets/og-preview.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <title>百题大过关·小升初语文｜互动练习</title>
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="assets/favicon.svg?v=20260720-2" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css?v=20260720-2">
 </head>
 <body>
   <div class="app-shell">
@@ -59,7 +67,7 @@
         </div>
         <div class="cover-wrap" aria-label="书籍封面">
           <div class="cover-shadow"></div>
-          <img src="assets/cover.jpg" alt="百题大过关小升初语文基础百题封面">
+          <img src="assets/cover.jpg?v=20260720-2" alt="百题大过关小升初语文基础百题封面">
           <span class="cover-note">原书扫描版</span>
         </div>
       </section>
@@ -85,7 +93,66 @@
           </div>
         </div>
 
-        <div class="workspace-grid">
+        <div class="practice-mode-switch" id="practiceModeSwitch" hidden aria-label="练习呈现方式">
+          <button id="cardModeButton" type="button" aria-pressed="true">文字题卡</button>
+          <button id="scanModeButton" type="button" aria-pressed="false">原书扫描</button>
+          <span>第一章样板 · 77 题</span>
+        </div>
+
+        <section class="question-practice" id="questionPractice" hidden aria-label="第一章文字题卡练习">
+          <div class="question-card-shell">
+            <header class="question-card-toolbar">
+              <div>
+                <span class="question-count" id="questionCount">第 001 题 · 共 77 题</span>
+                <label class="question-jump">跳到
+                  <select id="questionSelect" aria-label="选择第一章题号"></select>
+                </label>
+              </div>
+              <span class="question-progress-label" id="questionProgressLabel">已核对 0 / 77</span>
+            </header>
+            <div class="question-progress-track"><i id="questionProgressBar"></i></div>
+
+            <article class="question-card">
+              <div class="question-card-meta">
+                <span id="questionType">选择题</span>
+                <span id="questionSource">原书第 4 页</span>
+              </div>
+              <h2 id="questionPrompt"></h2>
+              <div class="question-options" id="questionOptions"></div>
+              <label class="short-answer" id="shortAnswerWrap" for="questionDraft" hidden>
+                <span>我的作答</span>
+                <textarea id="questionDraft" rows="4" placeholder="在这里写答案，核对后仍可修改……"></textarea>
+              </label>
+              <p class="draft-status" id="questionDraftStatus">作答会自动保存在本机</p>
+
+              <div class="question-card-actions">
+                <button class="reveal-card-answer" id="revealCardAnswer" type="button">核对答案</button>
+                <button class="source-page-button" id="openSourcePage" type="button">查看原书页</button>
+              </div>
+
+              <section class="card-answer" id="cardAnswer" hidden aria-live="polite">
+                <p>参考答案</p>
+                <strong id="cardAnswerText"></strong>
+                <div class="answer-detail" id="cardAnswerDetail" hidden></div>
+                <div class="card-feedback" id="cardFeedback"></div>
+                <div class="card-self-check" id="cardSelfCheck">
+                  <span>这题掌握了吗？</span>
+                  <div>
+                    <button type="button" data-card-result="correct">✓ 已掌握</button>
+                    <button type="button" data-card-result="wrong">× 需订正</button>
+                  </div>
+                </div>
+              </section>
+            </article>
+
+            <footer class="question-card-navigation">
+              <button id="prevQuestionButton" type="button">← 上一题</button>
+              <button id="nextQuestionButton" type="button">下一题 →</button>
+            </footer>
+          </div>
+        </section>
+
+        <div class="workspace-grid" id="scanWorkspaceGrid">
           <section class="paper-panel" aria-label="原题练习页">
             <div class="paper-toolbar">
               <div class="page-stepper">
@@ -99,7 +166,13 @@
               </label>
             </div>
             <div class="paper-stage" id="paperStage">
-              <img id="questionImage" alt="原书练习页">
+              <img id="questionImage" alt="原书练习页" decoding="async">
+              <div class="image-load-state" id="questionImageState" role="status">
+                <span class="loading-spinner" aria-hidden="true"></span>
+                <strong id="questionImageStateTitle">正在加载原书页…</strong>
+                <small id="questionImageStateCopy">首次打开可能需要几秒</small>
+                <button id="retryQuestionImage" type="button" hidden>重新加载</button>
+              </div>
             </div>
             <div class="page-footer">
               <span id="pageLocation">书本第 1 页 · PDF 第 6 页</span>
@@ -192,6 +265,7 @@
     </form>
   </dialog>
 
-  <script src="app.js"></script>
+  <script src="chapter1-data.js?v=20260720-2"></script>
+  <script src="app.js?v=20260720-2"></script>
 </body>
 </html>
