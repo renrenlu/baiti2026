@@ -1,11 +1,14 @@
 (() => {
   "use strict";
 
-  const assetVersion = "20260720-4";
+  const assetVersion = "20260721-1";
   const chapterOneQuestions = Array.isArray(window.chapterOneQuestions) ? window.chapterOneQuestions : [];
   const additionalQuestions = Array.isArray(window.additionalQuestions) ? window.additionalQuestions : [];
+  const challengeQuestions = Array.isArray(window.challengeQuestions) ? window.challengeQuestions : [];
   const workbookQuestions = [...chapterOneQuestions, ...additionalQuestions].sort((a, b) => a.id - b.id);
-  const questionById = new Map(workbookQuestions.map((question) => [question.id, question]));
+  const allCardQuestions = [...workbookQuestions, ...challengeQuestions].sort((a, b) => a.id - b.id);
+  const questionById = new Map(allCardQuestions.map((question) => [question.id, question]));
+  const maxCardId = allCardQuestions.at(-1)?.id || 1;
 
   const chapters = [
     { id: "chapter-1", index: "第一章", title: "识字写字", mark: "字", start: 1, end: 14, qStart: 1, qEnd: 77 },
@@ -16,17 +19,17 @@
     { id: "chapter-6", index: "第六章", title: "名言俗语", mark: "言", start: 71, end: 80, qStart: 262, qEnd: 311 },
     { id: "chapter-7", index: "第七章", title: "诗词歌赋", mark: "诗", start: 81, end: 92, qStart: 312, qEnd: 381 },
     { id: "chapter-8", index: "第八章", title: "课外阅读", mark: "读", start: 93, end: 102, qStart: 382, qEnd: 449 },
-    { id: "chapter-9", index: "第九章", title: "跨学科学习", mark: "融", start: 103, end: 124, qStart: 450, qEnd: 509 },
-    { id: "challenge-1", index: "基础冲关（一）", title: "综合情境一", mark: "一", start: 125, end: 127, challenge: 1, answerPages: [24, 25] },
-    { id: "challenge-2", index: "基础冲关（二）", title: "综合情境二", mark: "二", start: 128, end: 130, challenge: 2, answerPages: [25] },
-    { id: "challenge-3", index: "基础冲关（三）", title: "综合情境三", mark: "三", start: 131, end: 133, challenge: 3, answerPages: [25, 26] },
-    { id: "challenge-4", index: "基础冲关（四）", title: "综合情境四", mark: "四", start: 134, end: 136, challenge: 4, answerPages: [26] },
-    { id: "challenge-5", index: "基础冲关（五）", title: "综合情境五", mark: "五", start: 137, end: 139, challenge: 5, answerPages: [26, 27] },
-    { id: "challenge-6", index: "基础冲关（六）", title: "综合情境六", mark: "六", start: 140, end: 142, challenge: 6, answerPages: [27] },
-    { id: "challenge-7", index: "基础冲关（七）", title: "综合情境七", mark: "七", start: 143, end: 145, challenge: 7, answerPages: [27, 28] },
-    { id: "challenge-8", index: "基础冲关（八）", title: "综合情境八", mark: "八", start: 146, end: 148, challenge: 8, answerPages: [28, 29] },
-    { id: "challenge-9", index: "基础冲关（九）", title: "综合情境九", mark: "九", start: 149, end: 151, challenge: 9, answerPages: [29, 30] },
-    { id: "challenge-10", index: "基础冲关（十）", title: "综合情境十", mark: "十", start: 152, end: 154, challenge: 10, answerPages: [30] }
+    { id: "chapter-9", index: "第九章", title: "跨学科学习", mark: "融", start: 103, end: 122, qStart: 450, qEnd: 509 },
+    { id: "challenge-1", index: "基础冲关（一）", title: "综合情境一", mark: "一", start: 123, end: 126, bookStart: 125, bookEnd: 128, challenge: 1, answerPages: [24, 25] },
+    { id: "challenge-2", index: "基础冲关（二）", title: "综合情境二", mark: "二", start: 127, end: 129, bookStart: 129, bookEnd: 131, challenge: 2, answerPages: [25] },
+    { id: "challenge-3", index: "基础冲关（三）", title: "综合情境三", mark: "三", start: 130, end: 132, bookStart: 132, bookEnd: 134, challenge: 3, answerPages: [25, 26] },
+    { id: "challenge-4", index: "基础冲关（四）", title: "综合情境四", mark: "四", start: 133, end: 135, bookStart: 135, bookEnd: 137, challenge: 4, answerPages: [26] },
+    { id: "challenge-5", index: "基础冲关（五）", title: "综合情境五", mark: "五", start: 136, end: 138, bookStart: 138, bookEnd: 140, challenge: 5, answerPages: [26, 27] },
+    { id: "challenge-6", index: "基础冲关（六）", title: "综合情境六", mark: "六", start: 139, end: 141, bookStart: 141, bookEnd: 143, challenge: 6, answerPages: [27] },
+    { id: "challenge-7", index: "基础冲关（七）", title: "综合情境七", mark: "七", start: 142, end: 144, bookStart: 144, bookEnd: 146, challenge: 7, answerPages: [27, 28] },
+    { id: "challenge-8", index: "基础冲关（八）", title: "综合情境八", mark: "八", start: 145, end: 147, bookStart: 147, bookEnd: 149, challenge: 8, answerPages: [28, 29] },
+    { id: "challenge-9", index: "基础冲关（九）", title: "综合情境九", mark: "九", start: 148, end: 150, bookStart: 150, bookEnd: 152, challenge: 9, answerPages: [29, 30] },
+    { id: "challenge-10", index: "基础冲关（十）", title: "综合情境十", mark: "十", start: 151, end: 153, bookStart: 153, bookEnd: 155, challenge: 10, answerPages: [30] }
   ];
 
   const answerRanges = [
@@ -50,8 +53,8 @@
     zoom: 100
   };
   let state = loadState();
-  let currentPage = clamp(Number(state.currentPage) || 1, 1, 154);
-  let currentQuestion = clamp(Number(state.currentQuestion) || 1, 1, Math.max(1, workbookQuestions.length));
+  let currentPage = clamp(Number(state.currentPage) || 1, 1, 153);
+  let currentQuestion = clamp(Number(state.currentQuestion) || 1, 1, maxCardId);
   let workspaceMode = state.workspaceMode === "scan" ? "scan" : "cards";
   let answerVisible = false;
   let cardAnswerVisible = false;
@@ -66,6 +69,7 @@
     questionPractice: $("questionPractice"), scanWorkspaceGrid: $("scanWorkspaceGrid"), questionCount: $("questionCount"),
     questionSelect: $("questionSelect"), questionProgressLabel: $("questionProgressLabel"), questionProgressBar: $("questionProgressBar"),
     questionType: $("questionType"), questionSource: $("questionSource"), questionPrompt: $("questionPrompt"),
+    questionContext: $("questionContext"), questionContextText: $("questionContextText"),
     questionOptions: $("questionOptions"), shortAnswerWrap: $("shortAnswerWrap"), questionDraft: $("questionDraft"),
     questionDraftStatus: $("questionDraftStatus"), revealCardAnswer: $("revealCardAnswer"),
     cardAnswer: $("cardAnswer"), cardAnswerText: $("cardAnswerText"),
@@ -113,10 +117,19 @@
   function pad3(value) { return String(value).padStart(3, "0"); }
   function sourceForPage(bookPage) { return `assets/pages/page-${pad3(bookPage + 5)}.jpg?v=${assetVersion}`; }
   function sourceForAnswer(answerPage) { return `assets/answers/answer-${pad3(answerPage + 159)}.jpg?v=${assetVersion}`; }
+  function displayedBookPage(page) { return page >= 123 ? page + 2 : page; }
+  function chapterBookStart(chapter) { return chapter.bookStart || chapter.start; }
+  function chapterBookEnd(chapter) { return chapter.bookEnd || chapter.end; }
   function chapterForPage(page) { return chapters.find((chapter) => page >= chapter.start && page <= chapter.end); }
   function chapterForQuestion(number) { return chapters.find((chapter) => !chapter.challenge && number >= chapter.qStart && number <= chapter.qEnd); }
+  function chapterForCard(question) {
+    return question?.challenge
+      ? chapters.find((chapter) => chapter.challenge === question.challenge)
+      : chapterForQuestion(question?.id);
+  }
   function questionsForChapter(chapter) {
-    if (!chapter || chapter.challenge) return [];
+    if (!chapter) return [];
+    if (chapter.challenge) return challengeQuestions.filter((question) => question.challenge === chapter.challenge);
     return workbookQuestions.filter((question) => question.id >= chapter.qStart && question.id <= chapter.qEnd);
   }
   function answerPageForQuestion(number) {
@@ -145,7 +158,7 @@
     const total = chapter.end - chapter.start + 1;
     return `<button class="nav-chapter" type="button" data-chapter="${chapter.id}">
       <span class="nav-index">${chapter.challenge ? `0${chapter.challenge}`.slice(-2) : chapter.index.replace(/第|章/g, "")}</span>
-      <span class="nav-title"><strong>${chapter.challenge ? chapter.index : chapter.title}</strong><small>书本 ${chapter.start}—${chapter.end} 页</small></span>
+      <span class="nav-title"><strong>${chapter.challenge ? chapter.index : chapter.title}</strong><small>书本 ${chapterBookStart(chapter)}—${chapterBookEnd(chapter)} 页</small></span>
       <span class="nav-progress">${count}/${total}</span>
     </button>`;
   }
@@ -156,7 +169,7 @@
       const total = chapter.end - chapter.start + 1;
       const percent = Math.round((count / total) * 100);
       const meta = chapter.challenge
-        ? `3 页套题 · 答案册${rangeLabel(chapter.answerPages)}`
+        ? `${questionsForChapter(chapter).length} 道小题 · 书本 ${chapterBookStart(chapter)}—${chapterBookEnd(chapter)} 页`
         : `${chapter.qEnd - chapter.qStart + 1} 个题号 · 书本 ${chapter.start}—${chapter.end} 页`;
       return `<button class="chapter-card ${chapter.challenge ? "challenge-card" : ""}" type="button" data-chapter="${chapter.id}" data-mark="${chapter.mark}">
         <span class="card-number">${chapter.index}</span><h3>${chapter.title}</h3><p>${meta}</p>
@@ -182,7 +195,7 @@
   }
 
   function openPage(page, options = {}) {
-    currentPage = clamp(Number(page), 1, 154);
+    currentPage = clamp(Number(page), 1, 153);
     if (options.mode) workspaceMode = options.mode;
     state.currentPage = currentPage;
     saveState();
@@ -195,14 +208,15 @@
 
   function renderWorkspace(keepAnswer = false) {
     const chapter = chapterForPage(currentPage);
+    const bookPage = displayedBookPage(currentPage);
     els.workspaceKicker.textContent = chapter.index;
     els.workspaceTitle.textContent = chapter.title;
-    els.questionImage.alt = `《百题大过关·小升初语文》书本第 ${currentPage} 页原题`;
+    els.questionImage.alt = `《百题大过关·小升初语文》书本第 ${bookPage} 页原题`;
     loadQuestionImage();
-    els.pageLocation.textContent = `书本第 ${currentPage} 页 · PDF 第 ${currentPage + 5} 页`;
+    els.pageLocation.textContent = `书本第 ${bookPage} 页 · PDF 第 ${currentPage + 5} 页`;
     els.pageSelect.innerHTML = Array.from({ length: chapter.end - chapter.start + 1 }, (_, index) => {
       const page = chapter.start + index;
-      return `<option value="${page}" ${page === currentPage ? "selected" : ""}>第 ${page} 页${state.completed.includes(page) ? " ✓" : ""}</option>`;
+      return `<option value="${page}" ${page === currentPage ? "selected" : ""}>第 ${displayedBookPage(page)} 页${state.completed.includes(page) ? " ✓" : ""}</option>`;
     }).join("");
     els.favoriteButton.setAttribute("aria-pressed", String(state.favorites.includes(currentPage)));
     els.favoriteButton.textContent = state.favorites.includes(currentPage) ? "★ 已收藏" : "☆ 收藏本页";
@@ -283,28 +297,33 @@
   }
 
   function activeQuestion() {
-    return questionById.get(currentQuestion) || workbookQuestions[0];
+    return questionById.get(currentQuestion) || allCardQuestions[0];
   }
 
   function renderQuestionCard() {
     const question = activeQuestion();
     if (!question) return;
-    const chapter = chapterForQuestion(question.id);
+    const chapter = chapterForCard(question);
     const chapterQuestions = questionsForChapter(chapter);
+    const questionIndex = chapterQuestions.findIndex((item) => item.id === question.id);
     const checked = new Set(Array.isArray(state.questionChecked) ? state.questionChecked : []);
     const checkedCount = chapterQuestions.filter((item) => checked.has(item.id)).length;
     const result = state.results[`q-${question.id}`];
     const draft = state.questionDrafts?.[question.id] || "";
 
-    els.questionCount.textContent = `第 ${pad3(question.id)} 题 · 本章 ${chapterQuestions.length} 题`;
+    els.questionCount.textContent = question.challenge
+      ? `${question.label} · 本套 ${chapterQuestions.length} 道小题`
+      : `第 ${pad3(question.id)} 题 · 本章 ${chapterQuestions.length} 题`;
     els.questionProgressLabel.textContent = `已核对 ${checkedCount} / ${chapterQuestions.length}`;
     els.questionProgressBar.style.width = `${Math.round((checkedCount / chapterQuestions.length) * 100)}%`;
     els.questionType.textContent = question.type === "choice" ? "选择题" : "书写题";
-    els.questionSource.textContent = `原书第 ${question.page} 页`;
+    els.questionSource.textContent = `原书第 ${question.bookPage || question.page} 页`;
+    els.questionContext.hidden = !question.context;
+    els.questionContextText.textContent = question.context || "";
     els.questionPrompt.textContent = question.prompt;
 
     els.questionSelect.innerHTML = chapterQuestions.map((item) =>
-      `<option value="${item.id}" ${item.id === question.id ? "selected" : ""}>第 ${pad3(item.id)} 题${checked.has(item.id) ? " ✓" : ""}</option>`
+      `<option value="${item.id}" ${item.id === question.id ? "selected" : ""}>${item.label || `第 ${pad3(item.id)} 题`}${checked.has(item.id) ? " ✓" : ""}</option>`
     ).join("");
 
     const isChoice = question.type === "choice";
@@ -335,8 +354,8 @@
     document.querySelectorAll("[data-card-result]").forEach((button) => {
       button.classList.toggle("active", button.dataset.cardResult === result);
     });
-    $("prevQuestionButton").disabled = question.id === chapter.qStart;
-    $("nextQuestionButton").disabled = question.id === chapter.qEnd;
+    $("prevQuestionButton").disabled = questionIndex <= 0;
+    $("nextQuestionButton").disabled = questionIndex < 0 || questionIndex >= chapterQuestions.length - 1;
   }
 
   function saveQuestionDraft(value) {
@@ -392,7 +411,7 @@
   }
 
   function goToQuestion(number, scroll = true) {
-    const target = questionById.get(clamp(Number(number), 1, workbookQuestions.length));
+    const target = questionById.get(Number(number));
     if (!target) return;
     currentQuestion = target.id;
     const question = activeQuestion();
@@ -401,6 +420,14 @@
     saveState();
     renderQuestionCard();
     if (scroll) window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function stepQuestion(delta) {
+    const question = activeQuestion();
+    const chapterQuestions = questionsForChapter(chapterForCard(question));
+    const index = chapterQuestions.findIndex((item) => item.id === question.id);
+    const target = chapterQuestions[index + delta];
+    if (target) goToQuestion(target.id);
   }
 
   function setWorkspaceMode(mode) {
@@ -420,8 +447,8 @@
 
   function renderProgress() {
     const count = new Set(state.completed).size;
-    const percent = Math.round((count / 154) * 100);
-    els.progressLabel.textContent = `已完成 ${count} / 154 页`;
+    const percent = Math.round((count / 153) * 100);
+    els.progressLabel.textContent = `已完成 ${count} / 153 页`;
     els.progressBar.style.width = `${percent}%`;
     els.sidebarProgress.textContent = `${percent}%`;
     renderNavigation();
@@ -592,7 +619,7 @@
     }
     const chapter = chapterForQuestion(number);
     els.globalResult.textContent = `第 ${pad3(number)} 题属于${chapter.index}「${chapter.title}」，对应答案册第 ${answerPage} 页。`;
-    currentPage = clamp(chapter.start, 1, 154);
+    currentPage = clamp(chapter.start, 1, 153);
     if (questionById.has(number)) currentQuestion = number;
     els.questionNumber.value = String(number);
     els.answerDialog.close();
@@ -639,13 +666,13 @@
     if (cardAnswerVisible) renderCardAnswer();
   });
   $("revealCardAnswer").addEventListener("click", toggleCardAnswer);
-  $("prevQuestionButton").addEventListener("click", () => goToQuestion(currentQuestion - 1));
-  $("nextQuestionButton").addEventListener("click", () => goToQuestion(currentQuestion + 1));
+  $("prevQuestionButton").addEventListener("click", () => stepQuestion(-1));
+  $("nextQuestionButton").addEventListener("click", () => stepQuestion(1));
   $("openSourcePage").addEventListener("click", () => setWorkspaceMode("scan"));
   els.openCardAnswerSource.addEventListener("click", () => {
     const question = activeQuestion();
     const answerPage = question.answerPage || answerPageForQuestion(question.id);
-    openImageDialog(sourceForAnswer(answerPage), `第 ${pad3(question.id)} 题 · 答案册第 ${answerPage} 页`);
+    openImageDialog(sourceForAnswer(answerPage), `${question.label || `第 ${pad3(question.id)} 题`} · 答案册第 ${answerPage} 页`);
   });
   document.querySelectorAll("[data-card-result]").forEach((button) => button.addEventListener("click", () => setCardResult(button.dataset.cardResult)));
   $("closeDialogButton").addEventListener("click", () => els.imageDialog.close());
@@ -670,8 +697,8 @@
   document.addEventListener("keydown", (event) => {
     if (els.workspaceView.hidden || ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
     if (workspaceMode === "cards" && !els.questionPractice.hidden) {
-      if (event.key === "ArrowLeft") goToQuestion(currentQuestion - 1);
-      if (event.key === "ArrowRight") goToQuestion(currentQuestion + 1);
+      if (event.key === "ArrowLeft") stepQuestion(-1);
+      if (event.key === "ArrowRight") stepQuestion(1);
       if (event.key.toLowerCase() === "a") toggleCardAnswer();
     } else {
       if (event.key === "ArrowLeft") openPage(currentPage - 1);

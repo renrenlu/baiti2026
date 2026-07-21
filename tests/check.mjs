@@ -15,8 +15,10 @@ for (const match of source.matchAll(/\$\("([^"]+)"\)/g)) {
 globalThis.window = {};
 await import(new URL("chapter1-data.js", root));
 await import(new URL("questions-data.js", root));
+await import(new URL("challenge-data.js", root));
 const chapterOneQuestions = globalThis.window.chapterOneQuestions;
 const additionalQuestions = globalThis.window.additionalQuestions;
+const challengeQuestions = globalThis.window.challengeQuestions;
 const workbookQuestions = [...chapterOneQuestions, ...additionalQuestions];
 
 for (let page = 6; page <= 159; page += 1) {
@@ -45,11 +47,16 @@ assert.match(html, /chapter1-data\.js\?v=/);
 assert.ok(html.indexOf("chapter1-data.js") < html.indexOf("app.js"), "chapter data must load before the app");
 assert.match(html, /questions-data\.js\?v=/);
 assert.ok(html.indexOf("questions-data.js") < html.indexOf("app.js"), "all question data must load before the app");
+assert.match(html, /challenge-data\.js\?v=/);
+assert.ok(html.indexOf("challenge-data.js") < html.indexOf("app.js"), "challenge question data must load before the app");
 assert.match(source, /answers\/answer-/);
 assert.match(source, /localStorage/);
 assert.match(source, /retryQuestionImage/);
 assert.match(source, /revealCardAnswer: \$\("revealCardAnswer"\)/, "answer toggle must be present in the element map");
 assert.match(source, /openCardAnswerSource/, "each text card must link to its original answer page");
+assert.match(source, /challengeQuestions\.filter/, "challenge suites must render as text cards");
+assert.match(html, /id="questionContext"/, "long challenge passages need a collapsible reading area");
+assert.match(css, /\.question-context > div \{ max-height:/, "long reading passages must not overwhelm a mobile screen");
 assert.match(css, /@media \(max-width: 760px\)/);
 assert.match(css, /\.chapter-grid \{ grid-template-columns: 1fr;/);
 
@@ -94,4 +101,25 @@ for (const item of additionalQuestions) {
 assert.equal(workbookQuestions.at(-1).id, 509);
 assert.equal(workbookQuestions.at(-1).answerPage, 24);
 
-console.log("OK: scans 154+30, answer mappings, mobile layout, image retry, and all 509 text cards verified.");
+assert.equal(challengeQuestions.length, 128, "all ten challenge suites must contain 128 text cards");
+assert.deepEqual(challengeQuestions.map((item) => item.id), Array.from({ length: 128 }, (_, index) => index + 510));
+for (let challenge = 1; challenge <= 10; challenge += 1) {
+  assert.ok(challengeQuestions.some((item) => item.challenge === challenge), `challenge suite ${challenge} is missing`);
+}
+for (const item of challengeQuestions) {
+  assert.ok(item.prompt.trim().length > 5, `challenge card ${item.id} prompt is unexpectedly short`);
+  assert.ok(item.answer.trim().length > 0, `challenge card ${item.id} answer is missing`);
+  assert.ok(item.context.trim().length > 20, `challenge card ${item.id} reading context is missing`);
+  assert.ok(item.page >= 124 && item.page <= 153, `challenge card ${item.id} source page is invalid`);
+  assert.equal(item.bookPage, item.page + 2, `challenge card ${item.id} printed page is not aligned`);
+  assert.ok(item.answerPage >= 24 && item.answerPage <= 30, `challenge card ${item.id} answer page is invalid`);
+  assert.match(item.label, /^情境[一二] · 第 \d+ 题$/, `challenge card ${item.id} label is invalid`);
+  if (item.type === "choice") {
+    assert.ok(item.options.length >= 2, `challenge card ${item.id} needs at least two choices`);
+    assert.ok(item.options.some((option) => option.startsWith(`${item.answer}.`)), `challenge card ${item.id} answer does not match an option`);
+  }
+}
+assert.match(source, /start: 123, end: 126, bookStart: 125, bookEnd: 128/, "challenge one page range is not corrected");
+assert.match(source, /start: 151, end: 153, bookStart: 153, bookEnd: 155/, "challenge ten page range is not corrected");
+
+console.log("OK: scans, mobile layout, image retry, 509 main cards, and 128 challenge cards verified.");

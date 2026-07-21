@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#9d2f22">
-  <meta name="description" content="《百题大过关·小升初语文 基础百题》509 道互动文字题卡，原题扫描与参考答案按题号精确对应。">
+  <meta name="description" content="《百题大过关·小升初语文 基础百题》509 道正文题和 128 道基础冲关小题均已制作成互动文字题卡，答案逐题对应。">
   <meta property="og:type" content="website">
   <meta property="og:title" content="百题大过关·小升初语文｜互动练习">
-  <meta property="og:description" content="509 道小升初语文文字题卡，原题扫描与参考答案按题号精确对应。">
+  <meta property="og:description" content="509 道正文题与 128 道基础冲关小题均可直接在线作答，参考答案逐题对应。">
   <meta property="og:url" content="https://renrenlu.github.io/baiti2026/">
   <meta property="og:image" content="https://renrenlu.github.io/baiti2026/assets/og-preview.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <title>百题大过关·小升初语文｜互动练习</title>
-  <link rel="icon" href="assets/favicon.svg?v=20260720-4" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20260720-4">
+  <link rel="icon" href="assets/favicon.svg?v=20260721-1" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css?v=20260721-1">
 </head>
 <body>
   <div class="app-shell">
@@ -28,7 +28,7 @@
         <span><strong>基础百题</strong><small>小升初语文 · 互动练习</small></span>
       </a>
       <div class="top-progress" aria-label="学习进度">
-        <span id="progressLabel">已完成 0 / 154 页</span>
+        <span id="progressLabel">已完成 0 / 153 页</span>
         <span class="progress-track"><i id="progressBar"></i></span>
       </div>
       <button class="top-answer-button" id="topAnswerButton" type="button">题号查答案</button>
@@ -53,13 +53,13 @@
         <div class="hero-copy">
           <p class="eyebrow">2026 修订版 · 2 合 1</p>
           <h1>把整本练习册<br><em>装进浏览器</em></h1>
-          <p class="hero-description">154 页原题完整保留，509 个连续题号精准定位答案，另含 10 套基础冲关。无需联网，作答与进度自动保存在本机。</p>
+          <p class="hero-description">509 道正文题和 128 道基础冲关小题都已制作成文字题卡，答案逐题对应；原书扫描仍可随时切换查看。</p>
           <div class="hero-actions">
             <button class="primary-button" id="startButton" type="button">从第一章开始</button>
             <button class="secondary-button" id="continueButton" type="button">继续上次学习</button>
           </div>
           <div class="hero-stats">
-            <span><strong>154</strong>练习页</span>
+            <span><strong>155</strong>原书页</span>
             <span><strong>509</strong>连续题号</span>
             <span><strong>30</strong>答案页</span>
             <span><strong>10</strong>冲关套题</span>
@@ -67,7 +67,7 @@
         </div>
         <div class="cover-wrap" aria-label="书籍封面">
           <div class="cover-shadow"></div>
-          <img src="assets/cover.jpg?v=20260720-4" alt="百题大过关小升初语文基础百题封面">
+          <img src="assets/cover.jpg?v=20260721-1" alt="百题大过关小升初语文基础百题封面">
           <span class="cover-note">原书扫描版</span>
         </div>
       </section>
@@ -117,6 +117,10 @@
                 <span id="questionType">选择题</span>
                 <span id="questionSource">原书第 4 页</span>
               </div>
+              <details class="question-context" id="questionContext" open hidden>
+                <summary>阅读材料（可收起）</summary>
+                <div id="questionContextText"></div>
+              </details>
               <h2 id="questionPrompt"></h2>
               <div class="question-options" id="questionOptions"></div>
               <label class="short-answer" id="shortAnswerWrap" for="questionDraft" hidden>
@@ -266,8 +270,9 @@
     </form>
   </dialog>
 
-  <script src="chapter1-data.js?v=20260720-4"></script>
-  <script src="questions-data.js?v=20260720-4"></script>
-  <script src="app.js?v=20260720-4"></script>
+  <script src="chapter1-data.js?v=20260721-1"></script>
+  <script src="questions-data.js?v=20260721-1"></script>
+  <script src="challenge-data.js?v=20260721-1"></script>
+  <script src="app.js?v=20260721-1"></script>
 </body>
 </html>
