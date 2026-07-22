@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const assetVersion = "20260721-1";
+  const assetVersion = "20260722-1";
   const chapterOneQuestions = Array.isArray(window.chapterOneQuestions) ? window.chapterOneQuestions : [];
   const additionalQuestions = Array.isArray(window.additionalQuestions) ? window.additionalQuestions : [];
   const challengeQuestions = Array.isArray(window.challengeQuestions) ? window.challengeQuestions : [];
@@ -48,6 +48,8 @@
     notes: {},
     results: {},
     questionDrafts: {},
+    questionExtraDrafts: {},
+    inlineDrafts: {},
     questionChecked: [],
     workspaceMode: "cards",
     zoom: 100
@@ -70,7 +72,7 @@
     questionSelect: $("questionSelect"), questionProgressLabel: $("questionProgressLabel"), questionProgressBar: $("questionProgressBar"),
     questionType: $("questionType"), questionSource: $("questionSource"), questionPrompt: $("questionPrompt"),
     questionContext: $("questionContext"), questionContextText: $("questionContextText"),
-    questionOptions: $("questionOptions"), shortAnswerWrap: $("shortAnswerWrap"), questionDraft: $("questionDraft"),
+    questionOptions: $("questionOptions"), shortAnswerWrap: $("shortAnswerWrap"), questionDraftLabel: $("questionDraftLabel"), questionDraft: $("questionDraft"),
     questionDraftStatus: $("questionDraftStatus"), revealCardAnswer: $("revealCardAnswer"),
     cardAnswer: $("cardAnswer"), cardAnswerText: $("cardAnswerText"),
     cardAnswerDetail: $("cardAnswerDetail"), openCardAnswerSource: $("openCardAnswerSource"), cardFeedback: $("cardFeedback"), cardSelfCheck: $("cardSelfCheck"),
@@ -99,6 +101,8 @@
         notes: saved.notes && typeof saved.notes === "object" ? saved.notes : {},
         results: saved.results && typeof saved.results === "object" ? saved.results : {},
         questionDrafts: saved.questionDrafts && typeof saved.questionDrafts === "object" ? saved.questionDrafts : {},
+        questionExtraDrafts: saved.questionExtraDrafts && typeof saved.questionExtraDrafts === "object" ? saved.questionExtraDrafts : {},
+        inlineDrafts: saved.inlineDrafts && typeof saved.inlineDrafts === "object" ? saved.inlineDrafts : {},
         questionChecked: Array.isArray(saved.questionChecked) ? saved.questionChecked : []
       };
     } catch {
@@ -300,6 +304,120 @@
     return questionById.get(currentQuestion) || allCardQuestions[0];
   }
 
+  function normalizedAnswer(value) {
+    return String(value || "").replace(/[\s　，,。；;：:（）()]/g, "").toLowerCase();
+  }
+
+  function inlineDraftKey(question, scope, blank) {
+    return `q-${question.id}:${scope}:${blank.key}`;
+  }
+
+  function appendTextWithUnderlines(container, text, phrases = []) {
+    let remaining = text;
+    while (remaining) {
+      let nextIndex = -1;
+      let nextPhrase = "";
+      phrases.forEach((phrase) => {
+        const index = remaining.indexOf(phrase);
+        if (index >= 0 && (nextIndex < 0 || index < nextIndex)) {
+          nextIndex = index;
+          nextPhrase = phrase;
+        }
+      });
+      if (nextIndex < 0) {
+        container.append(document.createTextNode(remaining));
+        break;
+      }
+      if (nextIndex > 0) container.append(document.createTextNode(remaining.slice(0, nextIndex)));
+      const underline = document.createElement("span");
+      underline.className = "source-underline";
+      underline.textContent = nextPhrase;
+      container.append(underline);
+      remaining = remaining.slice(nextIndex + nextPhrase.length);
+    }
+  }
+
+  function appendTextWithBlanks(container, text, blanks, cursor, question, scope, underlinePhrases = []) {
+    const blankPattern = /（[\s　]*）/g;
+    let lastIndex = 0;
+    let match;
+    while ((match = blankPattern.exec(text)) && cursor.index < blanks.length) {
+      appendTextWithUnderlines(container, text.slice(lastIndex, match.index), underlinePhrases);
+      const blank = blanks[cursor.index++];
+      const wrapper = document.createElement("span");
+      wrapper.className = "inline-parenthesis";
+      wrapper.append(document.createTextNode("（"));
+      const input = document.createElement("input");
+      const key = inlineDraftKey(question, scope, blank);
+      input.type = "text";
+      input.className = `inline-blank ${blank.size || "medium"}`;
+      input.value = state.inlineDrafts?.[key] || "";
+      input.setAttribute("aria-label", `${question.label || `第 ${question.id} 题`}填空：${blank.key}`);
+      input.autocomplete = "off";
+      input.addEventListener("input", () => saveInlineDraft(key, input.value));
+      if (cardAnswerVisible) {
+        const entered = normalizedAnswer(input.value);
+        input.classList.toggle("correct", Boolean(entered) && entered === normalizedAnswer(blank.answer));
+        input.classList.toggle("wrong", Boolean(entered) && entered !== normalizedAnswer(blank.answer));
+      }
+      wrapper.append(input, document.createTextNode("）"));
+      if (cardAnswerVisible) {
+        const hint = document.createElement("span");
+        hint.className = "inline-answer-hint";
+        hint.textContent = `答案：${blank.answer}`;
+        wrapper.append(hint);
+      }
+      container.append(wrapper);
+      lastIndex = blankPattern.lastIndex;
+    }
+    appendTextWithUnderlines(container, text.slice(lastIndex), underlinePhrases);
+  }
+
+  function renderQuestionContext(question) {
+    els.questionContext.hidden = !question.context;
+    els.questionContextText.replaceChildren();
+    if (!question.context) return;
+    const underlined = new Set(question.contextUnderlineParagraphs || []);
+    const blanks = question.contextBlanks || [];
+    const cursor = { index: 0 };
+    question.context.split(/\n\s*\n/).forEach((paragraph, index) => {
+      const block = document.createElement("p");
+      if (underlined.has(index)) block.classList.add("source-underline");
+      appendTextWithBlanks(block, paragraph, blanks, cursor, question, "context");
+      els.questionContextText.append(block);
+    });
+  }
+
+  function renderQuestionPrompt(question) {
+    els.questionPrompt.replaceChildren();
+    appendTextWithBlanks(
+      els.questionPrompt,
+      question.prompt,
+      question.promptBlanks || [],
+      { index: 0 },
+      question,
+      "prompt",
+      question.promptUnderlinePhrases || []
+    );
+  }
+
+  function hasInlineDraft(question) {
+    return [...(question.contextBlanks || []), ...(question.promptBlanks || [])].some((blank) => {
+      const scope = (question.contextBlanks || []).includes(blank) ? "context" : "prompt";
+      return Boolean(state.inlineDrafts?.[inlineDraftKey(question, scope, blank)]);
+    });
+  }
+
+  function saveInlineDraft(key, value) {
+    state.inlineDrafts ||= {};
+    if (value) state.inlineDrafts[key] = value;
+    else delete state.inlineDrafts[key];
+    saveState();
+    const question = activeQuestion();
+    const hasSavedAnswer = hasInlineDraft(question) || state.questionDrafts?.[question.id] || state.questionExtraDrafts?.[question.id];
+    els.questionDraftStatus.textContent = hasSavedAnswer ? "作答已保存" : "作答会自动保存在本机";
+  }
+
   function renderQuestionCard() {
     const question = activeQuestion();
     if (!question) return;
@@ -310,25 +428,26 @@
     const checkedCount = chapterQuestions.filter((item) => checked.has(item.id)).length;
     const result = state.results[`q-${question.id}`];
     const draft = state.questionDrafts?.[question.id] || "";
+    const extraDraft = state.questionExtraDrafts?.[question.id] || "";
 
     els.questionCount.textContent = question.challenge
       ? `${question.label} · 本套 ${chapterQuestions.length} 道小题`
       : `第 ${pad3(question.id)} 题 · 本章 ${chapterQuestions.length} 题`;
     els.questionProgressLabel.textContent = `已核对 ${checkedCount} / ${chapterQuestions.length}`;
     els.questionProgressBar.style.width = `${Math.round((checkedCount / chapterQuestions.length) * 100)}%`;
-    els.questionType.textContent = question.type === "choice" ? "选择题" : "书写题";
+    els.questionType.textContent = question.extraResponse ? "选择＋表达" : question.inlineOnly ? "填空题" : question.type === "choice" ? "选择题" : "书写题";
     els.questionSource.textContent = `原书第 ${question.bookPage || question.page} 页`;
-    els.questionContext.hidden = !question.context;
-    els.questionContextText.textContent = question.context || "";
-    els.questionPrompt.textContent = question.prompt;
+    renderQuestionContext(question);
+    renderQuestionPrompt(question);
 
     els.questionSelect.innerHTML = chapterQuestions.map((item) =>
       `<option value="${item.id}" ${item.id === question.id ? "selected" : ""}>${item.label || `第 ${pad3(item.id)} 题`}${checked.has(item.id) ? " ✓" : ""}</option>`
     ).join("");
 
     const isChoice = question.type === "choice";
+    const showsWrittenResponse = !question.inlineOnly && (!isChoice || Boolean(question.extraResponse));
     els.questionOptions.hidden = !isChoice;
-    els.shortAnswerWrap.hidden = isChoice;
+    els.shortAnswerWrap.hidden = !showsWrittenResponse;
     if (isChoice) {
       els.questionOptions.innerHTML = question.options.map((option, index) => {
         const value = option.slice(0, 1);
@@ -344,10 +463,17 @@
       }));
     } else {
       els.questionOptions.innerHTML = "";
-      els.questionDraft.value = draft;
     }
 
-    els.questionDraftStatus.textContent = draft ? "作答已保存在本机" : "作答会自动保存在本机";
+    if (showsWrittenResponse) {
+      els.questionDraftLabel.textContent = question.extraResponse || "我的作答";
+      els.questionDraft.value = question.extraResponse ? extraDraft : draft;
+      const answerLines = question.answerLines || 4;
+      els.questionDraft.rows = answerLines;
+      els.questionDraft.style.minHeight = `${Math.max(82, answerLines * 36 + 28)}px`;
+    }
+
+    els.questionDraftStatus.textContent = draft || extraDraft || hasInlineDraft(question) ? "作答已保存在本机" : "作答会自动保存在本机";
     els.cardAnswer.hidden = !cardAnswerVisible;
     els.revealCardAnswer.textContent = cardAnswerVisible ? "收起答案" : "核对答案";
     if (cardAnswerVisible) renderCardAnswer(question);
@@ -368,8 +494,20 @@
     els.questionDraftStatus.textContent = value ? "作答已保存" : "作答会自动保存在本机";
   }
 
+  function saveQuestionExtraDraft(value) {
+    const question = activeQuestion();
+    if (!question) return;
+    state.questionExtraDrafts ||= {};
+    if (value) state.questionExtraDrafts[question.id] = value;
+    else delete state.questionExtraDrafts[question.id];
+    saveState();
+    els.questionDraftStatus.textContent = value ? "作答已保存" : "作答会自动保存在本机";
+  }
+
   function renderCardAnswer(question = activeQuestion()) {
     const draft = state.questionDrafts?.[question.id] || "";
+    const extraDraft = state.questionExtraDrafts?.[question.id] || "";
+    const hasAnyDraft = Boolean(draft || extraDraft || hasInlineDraft(question));
     els.cardAnswer.hidden = false;
     els.cardAnswerText.textContent = question.answer;
     els.cardAnswerDetail.hidden = !question.detail;
@@ -387,7 +525,7 @@
       }
     } else {
       els.cardFeedback.className = "card-feedback neutral";
-      els.cardFeedback.textContent = draft ? "请逐项对照参考答案，并在下方完成自评。" : "可以先查看参考答案，再补写或订正自己的作答。";
+      els.cardFeedback.textContent = hasAnyDraft ? "请逐项对照参考答案，并在下方完成自评。" : "可以先查看参考答案，再补写或订正自己的作答。";
     }
   }
 
@@ -662,7 +800,8 @@
   els.scanModeButton.addEventListener("click", () => setWorkspaceMode("scan"));
   els.questionSelect.addEventListener("change", () => goToQuestion(Number(els.questionSelect.value)));
   els.questionDraft.addEventListener("input", () => {
-    saveQuestionDraft(els.questionDraft.value);
+    if (activeQuestion()?.extraResponse) saveQuestionExtraDraft(els.questionDraft.value);
+    else saveQuestionDraft(els.questionDraft.value);
     if (cardAnswerVisible) renderCardAnswer();
   });
   $("revealCardAnswer").addEventListener("click", toggleCardAnswer);
@@ -685,7 +824,7 @@
   els.globalQuestionNumber.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); runGlobalSearch(); } });
   $("resetButton").addEventListener("click", () => {
     if (!confirm("确定清空所有完成记录、收藏、作答笔记和自评结果吗？此操作无法撤销。")) return;
-    state = { ...defaultState, completed: [], favorites: [], notes: {}, results: {}, questionDrafts: {}, questionChecked: [] };
+    state = { ...defaultState, completed: [], favorites: [], notes: {}, results: {}, questionDrafts: {}, questionExtraDrafts: {}, inlineDrafts: {}, questionChecked: [] };
     currentPage = 1;
     currentQuestion = 1;
     workspaceMode = "cards";

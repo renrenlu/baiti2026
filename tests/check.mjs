@@ -56,7 +56,12 @@ assert.match(source, /revealCardAnswer: \$\("revealCardAnswer"\)/, "answer toggl
 assert.match(source, /openCardAnswerSource/, "each text card must link to its original answer page");
 assert.match(source, /challengeQuestions\.filter/, "challenge suites must render as text cards");
 assert.match(html, /id="questionContext"/, "long challenge passages need a collapsible reading area");
+assert.match(html, /id="questionDraftLabel"/, "hybrid questions need an explicit written-response label");
 assert.match(css, /\.question-context > div \{ max-height:/, "long reading passages must not overwhelm a mobile screen");
+assert.match(css, /\.inline-blank\.correct/, "inline blanks need answer feedback styling");
+assert.match(css, /\.source-underline/, "source underlines must be preserved in text cards");
+assert.match(source, /inlineDrafts/, "inline answers must persist on the device");
+assert.match(source, /renderQuestionContext/, "rich reading context must be rendered structurally");
 assert.match(css, /@media \(max-width: 760px\)/);
 assert.match(css, /\.chapter-grid \{ grid-template-columns: 1fr;/);
 
@@ -121,5 +126,20 @@ for (const item of challengeQuestions) {
 }
 assert.match(source, /start: 123, end: 126, bookStart: 125, bookEnd: 128/, "challenge one page range is not corrected");
 assert.match(source, /start: 151, end: 153, bookStart: 153, bookEnd: 155/, "challenge ten page range is not corrected");
+
+const challengeNine = challengeQuestions.filter((item) => item.challenge === 9);
+assert.equal(challengeNine.length, 18, "challenge nine must contain all 18 source questions");
+const c9 = (scenario, number) => challengeNine.find((item) => item.scenario === scenario && item.number === number);
+assert.deepEqual(c9("情境一", 3).contextBlanks.map((blank) => blank.answer), ["推广", "传承"]);
+assert.equal(c9("情境一", 3).inlineOnly, true, "passage blanks should replace the generic textarea");
+assert.deepEqual(c9("情境一", 4).promptBlanks.map((blank) => blank.answer), ["A", "D"]);
+assert.deepEqual(c9("情境一", 6).contextUnderlineParagraphs, [0], "the source correction sentence must stay underlined");
+assert.doesNotMatch(c9("情境一", 5).answer, /因为能够成为伟大的民族/, "question five answer contains question six content");
+assert.match(c9("情境一", 7).answer, /言必信，行必果/, "question seven reference answer is incomplete");
+assert.equal(c9("情境二", 4).type, "choice");
+assert.equal(c9("情境二", 4).options.length, 4);
+assert.match(c9("情境二", 4).extraResponse, /组词并造句/);
+assert.deepEqual(c9("情境二", 5).promptBlanks.map((blank) => blank.answer), ["栉风沐雨", "迸发"]);
+assert.match(c9("情境二", 6).promptUnderlinePhrases[0], /最好的教科书/);
 
 console.log("OK: scans, mobile layout, image retry, 509 main cards, and 128 challenge cards verified.");

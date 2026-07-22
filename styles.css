@@ -186,6 +186,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .question-context summary { padding: 13px 16px; color: var(--red-dark); font: 800 13px system-ui, sans-serif; cursor: pointer; }
 .question-context[open] summary { border-bottom: 1px solid #ded3c2; }
 .question-context > div { max-height: 44vh; overflow: auto; padding: 16px 18px; white-space: pre-line; font-size: 16px; line-height: 1.9; }
+.question-context > div p { margin: 0 0 1em; }
+.question-context > div p:last-child { margin-bottom: 0; }
+.source-underline { text-decoration-line: underline; text-decoration-thickness: 1px; text-underline-offset: .16em; text-decoration-skip-ink: auto; }
+.inline-parenthesis { display: inline-flex; align-items: baseline; white-space: nowrap; }
+.inline-blank { min-width: 4em; margin: 0 .1em; border: 0; border-bottom: 1.5px solid #6e665d; border-radius: 0; padding: 0 .2em .08em; color: var(--ink); background: transparent; text-align: center; font: inherit; line-height: 1.2; outline: none; }
+.inline-blank.small { width: 2.5em; min-width: 2.5em; }
+.inline-blank.medium { width: 4.5em; min-width: 4.5em; }
+.inline-blank.large { width: 8em; min-width: 8em; }
+.inline-blank:focus { border-bottom-color: var(--red); box-shadow: 0 2px 0 rgba(166,58,43,.18); }
+.inline-blank.correct { color: #315d45; border-bottom-color: var(--green); background: rgba(222,238,227,.72); }
+.inline-blank.wrong { color: var(--red-dark); border-bottom-color: var(--red); background: rgba(244,221,215,.72); }
+.inline-answer-hint { margin-left: .35em; border-radius: 999px; padding: .2em .55em; color: #315d45; background: #deeee3; font: 700 11px/1.4 system-ui, sans-serif; }
 .question-card h2 { margin: 20px 0 26px; white-space: pre-line; font-size: clamp(20px, 2.5vw, 29px); line-height: 1.75; letter-spacing: .015em; }
 .question-options { display: grid; gap: 11px; }
 .question-option { display: grid; grid-template-columns: 34px 1fr; align-items: start; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: #fffefa; font-size: 16px; line-height: 1.7; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
